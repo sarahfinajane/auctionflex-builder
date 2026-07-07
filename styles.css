@@ -1,114 +1,225 @@
 body {
-  font-family: Arial, sans-serif;
-  background: #f6f4ef;
   margin: 0;
-  color: #222;
+  background: #efeae2;
+  font-family: Arial, sans-serif;
+  color: #1f1f1f;
 }
 
 main {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: auto;
   padding: 20px;
 }
 
-h1, h2, h3 {
-  margin-top: 0;
+.top {
+  background: #1f1f1f;
+  color: white;
+  padding: 24px;
+  border-radius: 18px;
+  margin-bottom: 18px;
 }
 
-.card {
+.top h1 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.top p {
+  margin-bottom: 0;
+  color: #ddd;
+}
+
+.panel,
+.lot-card {
   background: white;
-  border: 1px solid #ddd;
-  border-radius: 14px;
-  padding: 16px;
+  border: 3px solid #1f1f1f;
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+
+.section-title {
+  background: #1f1f1f;
+  color: white;
+  font-weight: 900;
+  letter-spacing: 1px;
+  padding: 10px 14px;
+  border-radius: 10px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+
+.small-title {
+  margin-top: 18px;
+  font-size: 14px;
 }
 
 label {
+  font-weight: 800;
   display: block;
-  font-weight: bold;
-  margin: 10px 0;
+  margin-bottom: 12px;
 }
 
-input, textarea {
+input,
+textarea {
   width: 100%;
   box-sizing: border-box;
-  padding: 10px;
-  border: 1px solid #bbb;
-  border-radius: 8px;
-  font-size: 15px;
+  padding: 12px;
+  margin-top: 6px;
+  border: 2px solid #aaa;
+  border-radius: 10px;
+  font-size: 16px;
 }
 
 textarea {
   font-family: Arial, sans-serif;
 }
 
-button {
-  background: #222;
-  color: white;
-  border: 0;
-  border-radius: 10px;
-  padding: 11px 14px;
-  cursor: pointer;
-  margin: 5px 5px 5px 0;
-  font-size: 15px;
-}
-
-button:hover {
-  opacity: .85;
-}
-
-.check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: normal;
-}
-
-.check input {
-  width: auto;
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.checkbox-line {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  font-weight: 700;
 }
 
-.photoGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
+.checkbox-line input {
+  width: auto;
 }
 
-.lotHead {
+.primary-btn,
+.ocrBtn {
+  background: #1f1f1f;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 13px 18px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-btn:hover,
+.ocrBtn:hover {
+  opacity: .85;
+}
+
+.lot-header {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 14px;
+  align-items: center;
 }
 
-.status {
-  color: #6b4f00;
-  margin-top: 10px;
-  font-size: 14px;
+.lot-header h2 {
+  margin: 0;
 }
 
-.note, .small {
+.photo-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.photo-box {
+  border: 4px dashed #333;
+  border-radius: 18px;
+  min-height: 270px;
+  padding: 16px;
+  text-align: center;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.info-box {
+  background: #fff8dc;
+}
+
+.slot-name {
+  background: #1f1f1f;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 900;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.photo-box strong {
+  font-size: 22px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.photo-box em {
   color: #555;
+  display: block;
+  margin-bottom: 12px;
 }
 
-.sticky {
-  position: sticky;
-  bottom: 0;
+.photo-box input {
+  border: none;
+  background: white;
+}
+
+.preview {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.preview img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 10px;
   border: 2px solid #222;
 }
 
-@media (max-width: 800px) {
-  .grid, .photoGrid {
+.status {
+  margin-top: 12px;
+  padding: 10px;
+  background: #fff4c7;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.hint {
+  color: #555;
+  font-size: 14px;
+}
+
+.download-bar {
+  position: sticky;
+  bottom: 0;
+  background: #efeae2;
+  border-top: 4px solid #1f1f1f;
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .grid,
+  .photo-slots {
     grid-template-columns: 1fr;
   }
 
-  .lotHead {
+  .lot-header {
     display: block;
+  }
+
+  .ocrBtn {
+    margin-top: 12px;
+    width: 100%;
   }
 }
