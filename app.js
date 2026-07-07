@@ -1,11 +1,33 @@
 window.addEventListener("DOMContentLoaded", () => {
-  const lotsDiv = document.getElementById("lots");
-  const template = document.getElementById("lotTemplate");
-  const photoStore = new WeakMap();
+  let lots = [];
+  let currentIndex = 0;
+  let activeCameraKey = null;
+  let activeStream = null;
 
-  function csvEscape(value) {
-    const text = String(value ?? "");
-    return `"${text.replaceAll('"', '""')}"`;
+  const fields = {
+    lotNumber: document.getElementById("lotNumber"),
+    sellerCode: document.getElementById("sellerCode"),
+    startBid: document.getElementById("startBid"),
+    title: document.getElementById("title"),
+    from: document.getElementById("from"),
+    price: document.getElementById("price"),
+    description: document.getElementById("description")
+  };
+
+  function newLot() {
+    return {
+      lotNumber: "",
+      sellerCode: document.getElementById("copySellerCode").checked ? document.getElementById("masterSellerCode").value : "",
+      startBid: document.getElementById("copyStartBid").checked ? document.getElementById("masterStartBid").value : "",
+      title: "",
+      from: document.getElementById("copyFrom").checked ? selectedMasterFrom() : "",
+      price: "",
+      descriptionEdited: false,
+      description: "",
+      stock: [],
+      info: [],
+      person: []
+    };
   }
 
   function selectedMasterFrom() {
@@ -13,131 +35,190 @@ window.addEventListener("DOMContentLoaded", () => {
     return selected ? selected.value : "";
   }
 
-  function buildDescription(lotEl) {
-    const master = document.getElementById("masterDescription").value;
-    return master
-      .replaceAll("{TITLE}", lotEl.querySelector(".title").value)
-      .replaceAll("{PRICE}", lotEl.querySelector(".price").value)
-      .replaceAll("{FROM}", lotEl.querySelector(".from").value);
+  function buildDescription(lot) {
+    return document.getElementById("masterDescription").value
+      .replaceAll("{TITLE}", lot.title || "")
+      .replaceAll("{PRICE}", lot.price || "")
+      .replaceAll("{FROM}", lot.from || "");
   }
 
-  function refreshDescription(lotEl) {
-    const copy = document.getElementById("copyDescription");
-    if (!copy || copy.checked) {
-      lotEl.querySelector(".description").value = buildDescription(lotEl);
+  function saveCurrentLot() {
+    if (!lots.length) return;
+    const lot = lots[currentIndex];
+    lot.lotNumber = fields.lotNumber.value.trim();
+    lot.sellerCode = fields.sellerCode.value.trim();
+    lot.startBid = fields.startBid.value.trim();
+    lot.title = fields.title.value.trim();
+    lot.from = fields.from.value;
+    lot.price = fields.price.value.trim();
+    lot.description = fields.description.value;
+    document.getElementById("savedStatus").textContent = "Saved automatically";
+  }
+
+  function loadCurrentLot() {
+    const lot = lots[currentIndex];
+    fields.lotNumber.value = lot.lotNumber;
+    fields.sellerCode.value = lot.sellerCode;
+    fields.startBid.value = lot.startBid;
+    fields.title.value = lot.title;
+    fields.from.value = lot.from;
+    fields.price.value = lot.price;
+
+    if (!lot.descriptionEdited && document.getElementById("copyDescription").checked) {
+      lot.description = buildDescription(lot);
+    }
+
+    fields.description.value = lot.description;
+    document.getElementById("lotPosition").textContent = `Lot ${currentIndex + 1} of ${lots.length}`;
+    document.getElementById("status").textContent = "";
+    renderPreviews();
+  }
+
+  function updateDescriptionFromFields() {
+    const lot = lots[currentIndex];
+    lot.title = fields.title.value.trim();
+    lot.from = fields.from.value;
+    lot.price = fields.price.value.trim();
+    if (!lot.descriptionEdited && document.getElementById("copyDescription").checked) {
+      lot.description = buildDescription(lot);
+      fields.description.value = lot.description;
     }
   }
 
-  function getFiles(lotEl, key) {
-    const store = photoStore.get(lotEl);
-    return store ? store[key] : [];
-  }
-
-  function addFiles(lotEl, key, files) {
-    const store = photoStore.get(lotEl) || { stock: [], info: [], person: [] };
-    const incoming = Array.from(files).filter(f => f.type && f.type.startsWith("image/"));
-    if (!incoming.length) return;
-
-    store[key] = store[key].concat(incoming);
-    photoStore.set(lotEl, store);
-    showPreview(lotEl, key);
-
-    if (key === "info") runOCR(lotEl);
-  }
-
-  function showPreview(lotEl, key) {
-    const preview =
-      key === "stock" ? lotEl.querySelector(".stockPreview") :
-      key === "info" ? lotEl.querySelector(".infoPreview") :
-      lotEl.querySelector(".personPreview");
-
-    preview.innerHTML = "";
-
-    getFiles(lotEl, key).slice(0, 10).forEach(file => {
-      const img = document.createElement("img");
-      img.src = URL.createObjectURL(file);
-      preview.appendChild(img);
-    });
-  }
-
-  function setupSlot(lotEl, slot, galleryInput, cameraInput, key) {
-    const galleryBtn = slot.querySelector(".galleryBtn");
-    const cameraBtn = slot.querySelector(".cameraBtn");
-
-    galleryBtn.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopPropagation();
-      galleryInput.click();
-    });
-
-    cameraBtn.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopPropagation();
-      cameraInput.click();
-    });
-
-    galleryInput.addEventListener("change", e => {
-      addFiles(lotEl, key, e.target.files);
-      galleryInput.value = "";
-    });
-
-    cameraInput.addEventListener("change", e => {
-      addFiles(lotEl, key, e.target.files);
-      cameraInput.value = "";
-    });
-
-    slot.addEventListener("dragover", e => {
-      e.preventDefault();
-      slot.classList.add("dragover");
-    });
-
-    slot.addEventListener("dragleave", () => slot.classList.remove("dragover"));
-
-    slot.addEventListener("drop", e => {
-      e.preventDefault();
-      slot.classList.remove("dragover");
-      addFiles(lotEl, key, e.dataTransfer.files);
-    });
-  }
-
-  function applyMasterToLot(lotEl) {
-    if (document.getElementById("copySellerCode").checked) {
-      lotEl.querySelector(".sellerCode").value = document.getElementById("masterSellerCode").value;
-    }
-
-    if (document.getElementById("copyStartBid").checked) {
-      lotEl.querySelector(".startBid").value = document.getElementById("masterStartBid").value;
-    }
-
-    if (document.getElementById("copyFrom").checked) {
-      lotEl.querySelector(".from").value = selectedMasterFrom();
-    }
-
-    refreshDescription(lotEl);
-  }
-
-  function createRows() {
-    lotsDiv.innerHTML = "";
+  function createLots() {
+    saveCurrentLot();
     const count = Number(document.getElementById("lotCount").value || 1);
+    lots = Array.from({ length: count }, () => newLot());
+    currentIndex = 0;
+    loadCurrentLot();
+  }
 
-    for (let i = 0; i < count; i++) {
-      const node = template.content.cloneNode(true);
-      const lotEl = node.querySelector(".lot-card");
+  function applyMasterAll() {
+    saveCurrentLot();
+    lots.forEach(lot => {
+      if (document.getElementById("copySellerCode").checked) lot.sellerCode = document.getElementById("masterSellerCode").value;
+      if (document.getElementById("copyStartBid").checked) lot.startBid = document.getElementById("masterStartBid").value;
+      if (document.getElementById("copyFrom").checked) lot.from = selectedMasterFrom();
+      if (document.getElementById("copyDescription").checked && !lot.descriptionEdited) lot.description = buildDescription(lot);
+    });
+    loadCurrentLot();
+  }
 
-      lotEl.querySelector("h2").textContent = `Lot Line ${i + 1}`;
-      photoStore.set(lotEl, { stock: [], info: [], person: [] });
+  function goNext() {
+    saveCurrentLot();
+    if (currentIndex < lots.length - 1) currentIndex++;
+    loadCurrentLot();
+  }
 
-      lotEl.querySelector(".title").addEventListener("input", () => refreshDescription(lotEl));
-      lotEl.querySelector(".price").addEventListener("input", () => refreshDescription(lotEl));
-      lotEl.querySelector(".from").addEventListener("change", () => refreshDescription(lotEl));
+  function goPrev() {
+    saveCurrentLot();
+    if (currentIndex > 0) currentIndex--;
+    loadCurrentLot();
+  }
 
-      setupSlot(lotEl, lotEl.querySelector('[data-key="stock"]'), lotEl.querySelector(".stockGallery"), lotEl.querySelector(".stockCamera"), "stock");
-      setupSlot(lotEl, lotEl.querySelector('[data-key="info"]'), lotEl.querySelector(".infoGallery"), lotEl.querySelector(".infoCamera"), "info");
-      setupSlot(lotEl, lotEl.querySelector('[data-key="person"]'), lotEl.querySelector(".personGallery"), lotEl.querySelector(".personCamera"), "person");
+  function addFiles(key, fileList) {
+    const files = Array.from(fileList).filter(f => f.type && f.type.startsWith("image/"));
+    if (!files.length) return;
 
-      applyMasterToLot(lotEl);
-      lotsDiv.appendChild(node);
+    lots[currentIndex][key] = lots[currentIndex][key].concat(files);
+    renderPreviews();
+
+    if (key === "info") runOCR();
+  }
+
+  function renderPreviews() {
+    ["stock", "info", "person"].forEach(key => {
+      const preview = document.getElementById(`${key}Preview`);
+      preview.innerHTML = "";
+      lots[currentIndex][key].slice(0, 12).forEach(file => {
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(file);
+        preview.appendChild(img);
+      });
+    });
+  }
+
+  function setupInputs() {
+    [
+      ["stockGallery", "stock"],
+      ["stockMobileCamera", "stock"],
+      ["infoGallery", "info"],
+      ["infoMobileCamera", "info"],
+      ["personGallery", "person"],
+      ["personMobileCamera", "person"]
+    ].forEach(([id, key]) => {
+      const input = document.getElementById(id);
+      input.addEventListener("change", e => {
+        addFiles(key, e.target.files);
+        input.value = "";
+      });
+    });
+
+    document.querySelectorAll(".galleryBtn, .cameraBtn").forEach(btn => {
+      btn.addEventListener("click", () => document.getElementById(btn.dataset.input).click());
+    });
+
+    document.querySelectorAll(".drop-slot").forEach(slot => {
+      const key = slot.dataset.key;
+      slot.addEventListener("dragover", e => {
+        e.preventDefault();
+        slot.classList.add("dragover");
+      });
+      slot.addEventListener("dragleave", () => slot.classList.remove("dragover"));
+      slot.addEventListener("drop", e => {
+        e.preventDefault();
+        slot.classList.remove("dragover");
+        addFiles(key, e.dataTransfer.files);
+      });
+    });
+
+    document.querySelectorAll(".desktop-camera-btn").forEach(btn => {
+      btn.addEventListener("click", () => openDesktopCamera(btn.dataset.key));
+    });
+  }
+
+  async function openDesktopCamera(key) {
+    activeCameraKey = key;
+    const panel = document.getElementById("cameraPanel");
+    const video = document.getElementById("cameraVideo");
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Webcam capture is not supported in this browser. Use Gallery or Phone Camera instead.");
+      return;
     }
+
+    try {
+      activeStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = activeStream;
+      panel.classList.remove("hidden");
+      panel.scrollIntoView({ behavior: "smooth" });
+    } catch (err) {
+      alert("Camera could not open. Browser permission or device camera may be blocked.");
+    }
+  }
+
+  function closeDesktopCamera() {
+    if (activeStream) {
+      activeStream.getTracks().forEach(track => track.stop());
+      activeStream = null;
+    }
+    document.getElementById("cameraPanel").classList.add("hidden");
+  }
+
+  function capturePhoto() {
+    const video = document.getElementById("cameraVideo");
+    if (!activeCameraKey || !video.videoWidth) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+
+    canvas.toBlob(blob => {
+      const file = new File([blob], `webcam-${Date.now()}.jpg`, { type: "image/jpeg" });
+      addFiles(activeCameraKey, [file]);
+      closeDesktopCamera();
+    }, "image/jpeg", 0.92);
   }
 
   function findPrice(text) {
@@ -166,7 +247,6 @@ window.addEventListener("DOMContentLoaded", () => {
       !line.toLowerCase().includes("sponsored") &&
       !line.toLowerCase().includes("google")
     ) || "";
-
     title = title.replace(/\s+/g, " ").trim();
     if (title.length > 50) {
       title = title.slice(0, 50);
@@ -175,11 +255,12 @@ window.addEventListener("DOMContentLoaded", () => {
     return title.trim();
   }
 
-  async function runOCR(lotEl) {
-    const files = getFiles(lotEl, "info").slice(0, 5);
-    const status = lotEl.querySelector(".status");
-    if (!files.length) return;
+  async function runOCR() {
+    const lot = lots[currentIndex];
+    const files = lot.info.slice(0, 5);
+    const status = document.getElementById("status");
 
+    if (!files.length) return;
     if (!window.Tesseract) {
       status.textContent = "OCR library did not load. You can type manually.";
       return;
@@ -198,20 +279,21 @@ window.addEventListener("DOMContentLoaded", () => {
       const price = findPrice(text);
       const from = guessFrom(text);
 
-      if (title) lotEl.querySelector(".title").value = title;
-      if (price) lotEl.querySelector(".price").value = price;
-      if (from) lotEl.querySelector(".from").value = from;
+      if (title) fields.title.value = title;
+      if (price) fields.price.value = price;
+      if (from) fields.from.value = from;
 
-      refreshDescription(lotEl);
+      updateDescriptionFromFields();
+      saveCurrentLot();
       status.textContent = "Slot 2 read complete. Review title, store, and price.";
     } catch (err) {
-      console.error(err);
       status.textContent = "OCR failed. You can still type title and price manually.";
     }
   }
 
-  function applyMasterToExistingLots() {
-    document.querySelectorAll(".lot-card").forEach(lotEl => applyMasterToLot(lotEl));
+  function csvEscape(value) {
+    const text = String(value ?? "");
+    return `"${text.replaceAll('"', '""')}"`;
   }
 
   function download(filename, blob) {
@@ -224,14 +306,11 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function downloadCSV() {
+    saveCurrentLot();
     const headers = ["Lot #", "Seller Code", "Title", "Start Bid", "Description"];
-    const rows = Array.from(document.querySelectorAll(".lot-card")).map(lotEl => [
-      lotEl.querySelector(".lotNumber").value,
-      lotEl.querySelector(".sellerCode").value,
-      lotEl.querySelector(".title").value,
-      lotEl.querySelector(".startBid").value,
-      lotEl.querySelector(".description").value
-    ]).filter(row => row[0] || row[2]);
+    const rows = lots
+      .filter(lot => lot.lotNumber || lot.title)
+      .map(lot => [lot.lotNumber, lot.sellerCode, lot.title, lot.startBid, lot.description]);
 
     const csv = [
       headers.map(csvEscape).join(","),
@@ -249,6 +328,8 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   async function downloadImageZip() {
+    saveCurrentLot();
+
     if (!window.JSZip) {
       alert("ZIP library did not load. Check internet connection.");
       return;
@@ -257,20 +338,18 @@ window.addEventListener("DOMContentLoaded", () => {
     const zip = new JSZip();
     let count = 0;
 
-    document.querySelectorAll(".lot-card").forEach(lotEl => {
-      const lotNumber = lotEl.querySelector(".lotNumber").value.trim();
-      if (!lotNumber) return;
-
+    lots.forEach(lot => {
+      if (!lot.lotNumber) return;
       let imageNumber = 1;
 
-      getFiles(lotEl, "stock").slice(0, 5).forEach(file => {
-        zip.file(`${lotNumber}_${imageNumber}${extFromFile(file)}`, file);
+      lot.stock.slice(0, 5).forEach(file => {
+        zip.file(`${lot.lotNumber}_${imageNumber}${extFromFile(file)}`, file);
         imageNumber++;
         count++;
       });
 
-      getFiles(lotEl, "person").forEach(file => {
-        zip.file(`${lotNumber}_${imageNumber}${extFromFile(file)}`, file);
+      lot.person.forEach(file => {
+        zip.file(`${lot.lotNumber}_${imageNumber}${extFromFile(file)}`, file);
         imageNumber++;
         count++;
       });
@@ -285,10 +364,30 @@ window.addEventListener("DOMContentLoaded", () => {
     download("auctionflex_images.zip", blob);
   }
 
-  document.getElementById("createRows").addEventListener("click", createRows);
-  document.getElementById("applyMaster").addEventListener("click", applyMasterToExistingLots);
+  Object.values(fields).forEach(field => {
+    field.addEventListener("input", () => {
+      if (field === fields.description) {
+        lots[currentIndex].descriptionEdited = true;
+      } else {
+        updateDescriptionFromFields();
+      }
+      saveCurrentLot();
+    });
+    field.addEventListener("change", () => {
+      updateDescriptionFromFields();
+      saveCurrentLot();
+    });
+  });
+
+  document.getElementById("createLots").addEventListener("click", createLots);
+  document.getElementById("applyMasterAll").addEventListener("click", applyMasterAll);
+  document.getElementById("nextLot").addEventListener("click", goNext);
+  document.getElementById("prevLot").addEventListener("click", goPrev);
   document.getElementById("downloadCsv").addEventListener("click", downloadCSV);
   document.getElementById("downloadImages").addEventListener("click", downloadImageZip);
+  document.getElementById("capturePhoto").addEventListener("click", capturePhoto);
+  document.getElementById("closeCamera").addEventListener("click", closeDesktopCamera);
 
-  createRows();
+  setupInputs();
+  createLots();
 });
