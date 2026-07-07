@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AuctionFlex Simple Builder</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main>
+    <h1>AuctionFlex Simple Builder</h1>
+    <p class="note">Everything runs in your browser. Nothing uploads anywhere.</p>
+
+    <section class="card">
+      <h2>Master Settings</h2>
+
+      <label>How many lots/lines?</label>
+      <input id="lotCount" type="number" min="1" value="10" />
+
+      <label>Master Seller Code</label>
+      <input id="masterSellerCode" value="HouseCC" />
+
+      <label class="check">
+        <input id="copySellerCode" type="checkbox" checked />
+        Copy seller code to every line
+      </label>
+
+      <label>Master Start Bid</label>
+      <input id="masterStartBid" value="3" />
+
+      <label class="check">
+        <input id="copyStartBid" type="checkbox" checked />
+        Copy start bid to every line
+      </label>
+
+      <label>Master Description / Disclaimer</label>
+      <textarea id="masterDescription" rows="10">Description:
+{TITLE}
+
+From:
+{FROM}
+
+Retail:
+{PRICE}
+
+Condition:
+unchecked, AS IS!
+
+SELLER CODE:
+SJ
+
+LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM THURSDAY-SATURDAY DURING BUSINESS HOURS ALL BIDS ARE FINAL. ONCE A BID IS PLACED WE CANNOT CHANGE IT. NO SHIPPING AND NO DELIVERY AVAILABLE. THANK YOU.</textarea>
+
+      <p class="small">Use placeholders: <b>{TITLE}</b>, <b>{PRICE}</b>, <b>{FROM}</b></p>
+
+      <button id="createRows">Create / Reset Lot Lines</button>
+    </section>
+
+    <section class="card">
+      <h2>Lots</h2>
+      <div id="lots"></div>
+    </section>
+
+    <section class="card sticky">
+      <button id="downloadCsv">Download CSV</button>
+      <button id="downloadImages">Download Image ZIP</button>
+    </section>
+  </main>
+
+  <template id="lotTemplate">
+    <div class="lot card">
+      <div class="lotHead">
+        <h3>Lot</h3>
+        <button class="ocrBtn" type="button">Extract title/price from Slot 2</button>
+      </div>
+
+      <div class="grid">
+        <label>Lot #<input class="lotNumber" /></label>
+        <label>Seller Code<input class="sellerCode" /></label>
+        <label>Title ≤ 50 chars<input class="title" maxlength="50" /></label>
+        <label>Start Bid<input class="startBid" /></label>
+        <label>From<input class="from" placeholder="Home Depot, Target, etc." /></label>
+        <label>Retail Price<input class="price" placeholder="$0.00" /></label>
+      </div>
+
+      <label>Description</label>
+      <textarea class="description" rows="8"></textarea>
+
+      <div class="photoGrid">
+        <label>Slot 1: Stock photos, up to 5
+          <input class="stockPhotos" type="file" accept="image/*" multiple />
+        </label>
+
+        <label>Slot 2: Info/price photos, up to 5
+          <input class="infoPhotos" type="file" accept="image/*" multiple />
+        </label>
+
+        <label>Slot 3: In-person photos
+          <input class="personPhotos" type="file" accept="image/*" multiple />
+        </label>
+      </div>
+
+      <div class="status"></div>
+    </div>
+  </template>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

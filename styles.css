@@ -1,0 +1,114 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f6f4ef;
+  margin: 0;
+  color: #222;
+}
+
+main {
+  max-width: 1100px;
+  margin: auto;
+  padding: 20px;
+}
+
+h1, h2, h3 {
+  margin-top: 0;
+}
+
+.card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+input, textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #bbb;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+textarea {
+  font-family: Arial, sans-serif;
+}
+
+button {
+  background: #222;
+  color: white;
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  margin: 5px 5px 5px 0;
+  font-size: 15px;
+}
+
+button:hover {
+  opacity: .85;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+}
+
+.check input {
+  width: auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.lotHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.status {
+  color: #6b4f00;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.note, .small {
+  color: #555;
+}
+
+.sticky {
+  position: sticky;
+  bottom: 0;
+  border: 2px solid #222;
+}
+
+@media (max-width: 800px) {
+  .grid, .photoGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .lotHead {
+    display: block;
+  }
+}
