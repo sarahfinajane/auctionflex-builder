@@ -56,18 +56,7 @@ window.addEventListener("DOMContentLoaded", () => {
     return lot;
   }
 
-  function isEmptyLot(lot) {
-    return !lot.lotNumber &&
-      !lot.title &&
-      !lot.price &&
-      !lot.descriptionEdited &&
-      lot.stock.length === 0 &&
-      lot.info.length === 0 &&
-      lot.person.length === 0;
-  }
-
   function applyMasterDefaultsToLot(lot) {
-    // This is the fix: when you move to an unused lot, the checked master settings drop in automatically.
     if (document.getElementById("copySellerCode").checked && !lot.sellerCode) {
       lot.sellerCode = document.getElementById("masterSellerCode").value;
     }
@@ -323,20 +312,105 @@ window.addEventListener("DOMContentLoaded", () => {
     return "";
   }
 
-  function shortenTitle(text) {
-    const lines = text.split("\n").map(x => x.trim()).filter(Boolean);
+  function cleanOCRLine(line) {
+    return line
+      .replace(/[|©®™]/g, "")
+      .replace(/[^\w\s\-.,/&"'()#+:]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
 
-    let title = lines.find(line =>
-      line.length > 8 &&
-      line.length < 120 &&
-      !line.includes("$") &&
-      !line.toLowerCase().includes("barcode") &&
-      !line.toLowerCase().includes("shopping") &&
-      !line.toLowerCase().includes("sponsored") &&
-      !line.toLowerCase().includes("google")
-    ) || "";
+  function looksLikeBadTitle(line) {
+    const lower = line.toLowerCase();
 
-    title = title.replace(/\s+/g, " ").trim();
+    const badWords = [
+      "barcode", "shopping", "sponsored", "google", "search", "results",
+      "images", "videos", "maps", "nearby", "open", "menu", "cart",
+      "sign in", "account", "ratings", "reviews", "review", "stars",
+      "delivery", "shipping", "pickup", "pick up", "in stock", "out of stock",
+      "add to cart", "buy now", "home", "department", "aisle", "model #",
+      "sku", "upc", "item #", "internet #", "store sku", "showing",
+      "sort by", "filter", "price", "retail", "condition"
+    ];
+
+    if (!line || line.length < 8) return true;
+    if (badWords.some(word => lower.includes(word))) return true;
+    if (/^\$?\d+(\.\d{2})?$/.test(line)) return true;
+    if (/^[\d\s$.,%-]+$/.test(line)) return true;
+    if ((line.match(/[a-zA-Z]/g) || []).length < 5) return true;
+    if (line.length > 140) return true;
+
+    return false;
+  }
+
+  function titleScore(line) {
+    const lower = line.toLowerCase();
+    let score = 0;
+
+    // Product words common in your auctions.
+    const productWords = [
+      "fan", "light", "kit", "sink", "faucet", "rug", "curtain", "panel",
+      "door", "trimmer", "timer", "fire pit", "cushion", "recycling", "bin",
+      "bath", "exhaust", "ceiling", "flush", "mount", "patio", "chair",
+      "ryobi", "glacier bay", "threshold", "broan", "nutone", "hampton bay",
+      "intermatic", "room essentials", "rubbermaid", "echo", "fairbury"
+    ];
+
+    productWords.forEach(word => {
+      if (lower.includes(word)) score += 12;
+    });
+
+    // Good title clues.
+    if (/\b\d+\s?(in|inch|ft|foot|gal|gallon|cfm|v|volt|w|watt|amp|lb)\b/i.test(line)) score += 10;
+    if (/[A-Z][a-z]+/.test(line)) score += 4;
+    if (line.length >= 18 && line.length <= 75) score += 10;
+    if (line.length > 75 && line.length <= 110) score += 4;
+
+    // Bad title clues.
+    if (line.includes("$")) score -= 20;
+    if (/\b\d{8,14}\b/.test(line)) score -= 20;
+    if ((line.match(/\d/g) || []).length > 10) score -= 10;
+    if ((line.match(/[^a-zA-Z0-9\s]/g) || []).length > 8) score -= 8;
+
+    return score;
+  }
+
+  function shortenTitleFromOCR(text) {
+    const rawLines = text
+      .split("\n")
+      .map(cleanOCRLine)
+      .filter(Boolean);
+
+    // Also try combining neighboring OCR lines because product titles often split across 2 lines.
+    const candidates = [];
+
+    rawLines.forEach((line, i) => {
+      candidates.push(line);
+
+      if (rawLines[i + 1]) {
+        candidates.push(`${line} ${rawLines[i + 1]}`);
+      }
+
+      if (rawLines[i + 1] && rawLines[i + 2]) {
+        candidates.push(`${line} ${rawLines[i + 1]} ${rawLines[i + 2]}`);
+      }
+    });
+
+    const scored = candidates
+      .map(line => cleanOCRLine(line))
+      .filter(line => !looksLikeBadTitle(line))
+      .map(line => ({ line, score: titleScore(line) }))
+      .sort((a, b) => b.score - a.score);
+
+    let title = scored.length ? scored[0].line : "";
+
+    // Remove common junk that sometimes sticks to product title.
+    title = title
+      .replace(/\b(Home Depot|Target|Walmart|Amazon|Lowe's|Lowes)\b/gi, "")
+      .replace(/\bFREE\b.*$/i, "")
+      .replace(/\bSponsored\b.*$/i, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
     if (title.length > 50) {
       title = title.slice(0, 50);
@@ -368,7 +442,7 @@ window.addEventListener("DOMContentLoaded", () => {
         text += "\n" + result.data.text;
       }
 
-      const title = shortenTitle(text);
+      const title = shortenTitleFromOCR(text);
       const price = findPrice(text);
       const from = guessFrom(text);
 
@@ -404,10 +478,12 @@ window.addEventListener("DOMContentLoaded", () => {
   function downloadCSV() {
     saveCurrentLot();
 
-    const headers = ["Lot #", "Seller Code", "Title", "Start Bid", "Description"];
+    // IMPORTANT: Your working AuctionFlex template has a blank 6th column.
+    // This exporter now matches that behind the scenes.
+    const headers = ["Lot #", "Seller Code", "Title", "Start Bid", "Description", ""];
     const rows = lots
       .filter(lot => lot.lotNumber || lot.title)
-      .map(lot => [lot.lotNumber, lot.sellerCode, lot.title, lot.startBid, lot.description]);
+      .map(lot => [lot.lotNumber, lot.sellerCode, lot.title, lot.startBid, lot.description, ""]);
 
     const csv = [
       headers.map(csvEscape).join(","),
