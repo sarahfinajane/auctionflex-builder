@@ -30,7 +30,7 @@ main {
 }
 
 .panel,
-.lot-card {
+.lot-workspace {
   background: white;
   border: 3px solid #1f1f1f;
   border-radius: 18px;
@@ -142,23 +142,25 @@ textarea {
   border: 3px solid #1f1f1f;
 }
 
-.lot-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
+.workspace-top {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 1fr;
+  gap: 12px;
   align-items: center;
+  margin-bottom: 16px;
 }
 
-.lot-header h2 {
-  margin: 0;
-}
-
-.ocrStatus {
+.lot-counter {
+  text-align: center;
   background: #fff4c7;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 14px;
+  border: 2px solid #1f1f1f;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.lot-counter strong,
+.lot-counter span {
+  display: block;
 }
 
 .photo-slots {
@@ -170,7 +172,7 @@ textarea {
 .drop-slot {
   border: 5px dashed #1f1f1f;
   border-radius: 22px;
-  min-height: 350px;
+  min-height: 360px;
   padding: 16px;
   background: #fafafa;
   text-align: center;
@@ -184,10 +186,6 @@ textarea {
 
 .info-slot {
   background: #fff8dc;
-}
-
-.info-slot.dragover {
-  background: #fff0a8;
 }
 
 .drop-inner {
@@ -216,20 +214,16 @@ textarea {
   margin-bottom: 6px;
 }
 
-.drop-slot em {
-  display: block;
-  color: #444;
-  margin-bottom: 10px;
-}
-
+.drop-slot em,
 .drop-slot small {
   display: block;
-  color: #666;
-  font-weight: 800;
-  margin-top: 8px;
+  color: #555;
+  font-weight: 700;
+  margin-bottom: 8px;
 }
 
-.hiddenFile {
+.hiddenFile,
+.hidden {
   display: none;
 }
 
@@ -237,16 +231,17 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 12px;
 }
 
-.slot-btn {
+.slot-btn,
+.desktop-camera-btn {
   border: 3px solid #1f1f1f;
   border-radius: 12px;
   padding: 12px 8px;
   font-weight: 900;
   cursor: pointer;
   font-size: 14px;
+  width: 100%;
 }
 
 .galleryBtn {
@@ -254,9 +249,14 @@ textarea {
   color: #1f1f1f;
 }
 
-.cameraBtn {
+.cameraBtn,
+.desktop-camera-btn {
   background: #1f1f1f;
   color: white;
+}
+
+.desktop-camera-btn {
+  margin-top: 10px;
 }
 
 .preview {
@@ -283,6 +283,22 @@ textarea {
   font-weight: 700;
 }
 
+.camera-panel {
+  margin-top: 18px;
+  padding: 16px;
+  border: 3px solid #1f1f1f;
+  border-radius: 18px;
+  background: #f7f7f7;
+}
+
+#cameraVideo {
+  width: 100%;
+  max-height: 420px;
+  background: black;
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+
 .hint {
   color: #555;
   font-size: 14px;
@@ -302,17 +318,9 @@ textarea {
 @media (max-width: 900px) {
   .grid,
   .photo-slots,
-  .store-list {
+  .store-list,
+  .workspace-top {
     grid-template-columns: 1fr;
-  }
-
-  .lot-header {
-    display: block;
-  }
-
-  .ocrStatus {
-    display: block;
-    margin-top: 10px;
   }
 
   .primary-btn,
