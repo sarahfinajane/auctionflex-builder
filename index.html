@@ -10,15 +10,15 @@
   <main>
     <header class="top">
       <h1>AuctionFlex CSV Builder</h1>
-      <p>Build AuctionFlex CSVs + renamed image ZIPs. Everything runs in your browser.</p>
+      <p>One-lot-at-a-time workflow, camera/gallery buttons, OCR, CSV export, image ZIP export.</p>
     </header>
 
     <section class="panel">
       <div class="section-title">MASTER SETTINGS</div>
 
       <div class="grid">
-        <label>How many lot lines?
-          <input id="lotCount" type="number" min="1" value="10" />
+        <label>How many lots?
+          <input id="lotCount" type="number" min="1" value="250" />
         </label>
 
         <label>Master Seller Code
@@ -60,10 +60,10 @@
 
       <label class="checkbox-line">
         <input id="copyDescription" type="checkbox" checked />
-        Copy master description to every lot
+        Use master description for every lot unless edited
       </label>
 
-      <textarea id="masterDescription" rows="12">Description:
+      <textarea id="masterDescription" rows="11">Description:
 {TITLE}
 
 From:
@@ -82,49 +82,41 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
 
       <p class="hint">Placeholders: {TITLE}, {PRICE}, {FROM}</p>
 
-      <button id="createRows" class="primary-btn">Create / Reset Lot Lines</button>
-      <button id="applyMaster" class="secondary-btn">Apply Master To Existing Lots</button>
+      <button id="createLots" class="primary-btn">Create / Reset Lots</button>
+      <button id="applyMasterAll" class="secondary-btn">Apply Master To All Lots</button>
     </section>
 
-    <section class="panel">
-      <div class="section-title">LOT LINES</div>
-      <div id="lots"></div>
-    </section>
-
-    <section class="download-bar">
-      <button id="downloadCsv" class="primary-btn">Download CSV</button>
-      <button id="downloadImages" class="primary-btn">Download Image ZIP</button>
-    </section>
-  </main>
-
-  <template id="lotTemplate">
-    <article class="lot-card">
-      <div class="lot-header">
-        <h2>Lot Line</h2>
-        <span class="ocrStatus">Slot 2 auto-reads when photos are added.</span>
+    <section class="panel lot-workspace">
+      <div class="workspace-top">
+        <button id="prevLot" class="secondary-btn">Previous Lot</button>
+        <div class="lot-counter">
+          <strong id="lotPosition">Lot 1 of 250</strong>
+          <span id="savedStatus">Saved automatically</span>
+        </div>
+        <button id="nextLot" class="primary-btn">Next Lot</button>
       </div>
 
-      <div class="section-title small-title">LOT DETAILS</div>
+      <div class="section-title">CURRENT LOT</div>
 
       <div class="grid">
         <label>Lot #
-          <input class="lotNumber" />
+          <input id="lotNumber" />
         </label>
 
         <label>Seller Code
-          <input class="sellerCode" />
+          <input id="sellerCode" />
         </label>
 
         <label>Start Bid
-          <input class="startBid" />
+          <input id="startBid" />
         </label>
 
         <label>Title, 50 characters max
-          <input class="title" maxlength="50" />
+          <input id="title" maxlength="50" />
         </label>
 
         <label>From
-          <select class="from">
+          <select id="from">
             <option value="">Blank</option>
             <option value="Home Depot">Home Depot</option>
             <option value="Target">Target</option>
@@ -135,7 +127,7 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
         </label>
 
         <label>Retail Price
-          <input class="price" placeholder="$0.00" />
+          <input id="price" placeholder="$0.00" />
         </label>
       </div>
 
@@ -143,63 +135,78 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
 
       <div class="photo-slots">
         <div class="drop-slot" data-key="stock">
-          <input class="stockGallery hiddenFile" type="file" accept="image/*" multiple>
-          <input class="stockCamera hiddenFile" type="file" accept="image/*" capture="environment">
+          <input id="stockGallery" class="hiddenFile" type="file" accept="image/*" multiple>
+          <input id="stockMobileCamera" class="hiddenFile" type="file" accept="image/*" capture="environment">
           <div class="drop-inner">
             <div class="icon">📷</div>
             <span class="slot-name">SLOT 1</span>
             <strong>Stock Photos</strong>
             <em>Included in image ZIP</em>
             <div class="button-row">
-              <button type="button" class="slot-btn galleryBtn">Choose Existing</button>
-              <button type="button" class="slot-btn cameraBtn">Take Photo</button>
+              <button type="button" class="slot-btn galleryBtn" data-input="stockGallery">Gallery</button>
+              <button type="button" class="slot-btn cameraBtn" data-input="stockMobileCamera">Phone Camera</button>
             </div>
-            <small>Drag/drop works on computer</small>
+            <button type="button" class="desktop-camera-btn" data-key="stock">Computer Webcam</button>
           </div>
-          <div class="preview stockPreview"></div>
+          <div id="stockPreview" class="preview"></div>
         </div>
 
         <div class="drop-slot info-slot" data-key="info">
-          <input class="infoGallery hiddenFile" type="file" accept="image/*" multiple>
-          <input class="infoCamera hiddenFile" type="file" accept="image/*" capture="environment">
+          <input id="infoGallery" class="hiddenFile" type="file" accept="image/*" multiple>
+          <input id="infoMobileCamera" class="hiddenFile" type="file" accept="image/*" capture="environment">
           <div class="drop-inner">
             <div class="icon">🔎</div>
             <span class="slot-name">SLOT 2</span>
             <strong>Info / Price Photos</strong>
             <em>OCR only, not zipped</em>
             <div class="button-row">
-              <button type="button" class="slot-btn galleryBtn">Choose Existing</button>
-              <button type="button" class="slot-btn cameraBtn">Take Photo</button>
+              <button type="button" class="slot-btn galleryBtn" data-input="infoGallery">Gallery</button>
+              <button type="button" class="slot-btn cameraBtn" data-input="infoMobileCamera">Phone Camera</button>
             </div>
+            <button type="button" class="desktop-camera-btn" data-key="info">Computer Webcam</button>
             <small>Auto-reads title + price</small>
           </div>
-          <div class="preview infoPreview"></div>
+          <div id="infoPreview" class="preview"></div>
         </div>
 
         <div class="drop-slot" data-key="person">
-          <input class="personGallery hiddenFile" type="file" accept="image/*" multiple>
-          <input class="personCamera hiddenFile" type="file" accept="image/*" capture="environment">
+          <input id="personGallery" class="hiddenFile" type="file" accept="image/*" multiple>
+          <input id="personMobileCamera" class="hiddenFile" type="file" accept="image/*" capture="environment">
           <div class="drop-inner">
             <div class="icon">🏷️</div>
             <span class="slot-name">SLOT 3</span>
             <strong>In-Person Photos</strong>
             <em>Included in image ZIP</em>
             <div class="button-row">
-              <button type="button" class="slot-btn galleryBtn">Choose Existing</button>
-              <button type="button" class="slot-btn cameraBtn">Take Photo</button>
+              <button type="button" class="slot-btn galleryBtn" data-input="personGallery">Gallery</button>
+              <button type="button" class="slot-btn cameraBtn" data-input="personMobileCamera">Phone Camera</button>
             </div>
-            <small>Drag/drop works on computer</small>
+            <button type="button" class="desktop-camera-btn" data-key="person">Computer Webcam</button>
           </div>
-          <div class="preview personPreview"></div>
+          <div id="personPreview" class="preview"></div>
+        </div>
+      </div>
+
+      <div id="cameraPanel" class="camera-panel hidden">
+        <div class="section-title small-title">CAMERA</div>
+        <video id="cameraVideo" autoplay playsinline></video>
+        <div class="button-row">
+          <button id="capturePhoto" class="primary-btn" type="button">Capture Photo</button>
+          <button id="closeCamera" class="secondary-btn" type="button">Close Camera</button>
         </div>
       </div>
 
       <div class="section-title small-title">DESCRIPTION</div>
-      <textarea class="description" rows="9"></textarea>
+      <textarea id="description" rows="9"></textarea>
 
-      <div class="status"></div>
-    </article>
-  </template>
+      <div id="status" class="status"></div>
+    </section>
+
+    <section class="download-bar">
+      <button id="downloadCsv" class="primary-btn">Download CSV</button>
+      <button id="downloadImages" class="primary-btn">Download Image ZIP</button>
+    </section>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
