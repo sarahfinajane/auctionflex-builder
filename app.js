@@ -22,7 +22,9 @@ function shortenTitle(text) {
     !line.match(/^\$?\d+(\.\d{2})?$/) &&
     !line.toLowerCase().includes("barcode") &&
     !line.toLowerCase().includes("google") &&
-    !line.toLowerCase().includes("shopping")
+    !line.toLowerCase().includes("shopping") &&
+    !line.toLowerCase().includes("sponsored") &&
+    !line.toLowerCase().includes("results")
   );
 
   let clean = likely || text;
@@ -103,14 +105,46 @@ function makePreviews(lotEl, key, previewDiv) {
   });
 }
 
-function handlePhotoInput(lotEl, input, key, previewSelector) {
-  const files = Array.from(input.files);
-  if (!files.length) return;
+async function addFilesToSlot(lotEl, key, files) {
+  const fileList = Array.from(files).filter(file => file.type.startsWith("image/"));
+  if (!fileList.length) return;
 
-  setFiles(lotEl, key, files, true);
+  setFiles(lotEl, key, fileList, true);
+
+  const previewSelector =
+    key === "stock" ? ".stockPreview" :
+    key === "info" ? ".infoPreview" :
+    ".personPreview";
+
   makePreviews(lotEl, key, lotEl.querySelector(previewSelector));
 
-  input.value = "";
+  if (key === "info") {
+    await runOCR(lotEl);
+  }
+}
+
+function setupDropSlot(lotEl, slotEl, inputEl, key) {
+  slotEl.addEventListener("click", () => inputEl.click());
+
+  inputEl.addEventListener("change", async e => {
+    await addFilesToSlot(lotEl, key, e.target.files);
+    inputEl.value = "";
+  });
+
+  slotEl.addEventListener("dragover", e => {
+    e.preventDefault();
+    slotEl.classList.add("dragover");
+  });
+
+  slotEl.addEventListener("dragleave", () => {
+    slotEl.classList.remove("dragover");
+  });
+
+  slotEl.addEventListener("drop", async e => {
+    e.preventDefault();
+    slotEl.classList.remove("dragover");
+    await addFilesToSlot(lotEl, key, e.dataTransfer.files);
+  });
 }
 
 function applyMasterToLot(lotEl) {
@@ -156,34 +190,28 @@ function createRows() {
       lotEl.querySelector(sel).addEventListener("change", () => refreshDescription(lotEl));
     });
 
-    lotEl.querySelector(".ocrBtn").addEventListener("click", () => runOCR(lotEl));
+    setupDropSlot(
+      lotEl,
+      lotEl.querySelector('[data-key="stock"]'),
+      lotEl.querySelector(".stockPhotos"),
+      "stock"
+    );
 
-    lotEl.querySelector(".stockPhotos").addEventListener("change", e => {
-      handlePhotoInput(lotEl, e.target, "stock", ".stockPreview");
-    });
+    setupDropSlot(
+      lotEl,
+      lotEl.querySelector('[data-key="info"]'),
+      lotEl.querySelector(".infoPhotos"),
+      "info"
+    );
 
-    lotEl.querySelector(".stockCamera").addEventListener("change", e => {
-      handlePhotoInput(lotEl, e.target, "stock", ".stockPreview");
-    });
-
-    lotEl.querySelector(".infoPhotos").addEventListener("change", e => {
-      handlePhotoInput(lotEl, e.target, "info", ".infoPreview");
-    });
-
-    lotEl.querySelector(".infoCamera").addEventListener("change", e => {
-      handlePhotoInput(lotEl, e.target, "info", ".infoPreview");
-    });
-
-    lotEl.querySelector(".personPhotos").addEventListener("change", e => {
-      handlePhotoInput(lotEl, e.target, "person", ".personPreview");
-    });
-
-    lotEl.querySelector(".personCamera").addEventListener("change", e => {
-      handlePhotoInput(lotEl, e.target, "person", ".personPreview");
-    });
+    setupDropSlot(
+      lotEl,
+      lotEl.querySelector('[data-key="person"]'),
+      lotEl.querySelector(".personPhotos"),
+      "person"
+    );
 
     applyMasterToLot(lotEl);
-
     lotsDiv.appendChild(node);
   }
 }
@@ -193,11 +221,11 @@ async function runOCR(lotEl) {
   const status = lotEl.querySelector(".status");
 
   if (!files.length) {
-    status.textContent = "Add or take info/price photos in Slot 2 first.";
+    status.textContent = "Add info/price photos in Slot 2 first.";
     return;
   }
 
-  status.textContent = "Reading Slot 2 photos. This can take a minute.";
+  status.textContent = "Reading Slot 2 now...";
 
   let fullText = "";
 
@@ -216,7 +244,7 @@ async function runOCR(lotEl) {
 
   refreshDescription(lotEl);
 
-  status.textContent = "OCR complete. Please review title, from, and price before exporting.";
+  status.textContent = "Slot 2 read complete. Please review title, store, and price.";
 }
 
 function getLotRows() {
