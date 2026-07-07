@@ -1,6 +1,5 @@
 const lotsDiv = document.getElementById("lots");
 const template = document.getElementById("lotTemplate");
-
 const photoStore = new WeakMap();
 
 function csvEscape(value) {
@@ -13,137 +12,73 @@ function selectedMasterFrom() {
   return selected ? selected.value : "";
 }
 
-function shortenTitle(text) {
-  let lines = text.split(/\n/).map(x => x.trim()).filter(Boolean);
-
-  let likely = lines.find(line =>
-    line.length > 8 &&
-    line.length < 120 &&
-    !line.match(/^\$?\d+(\.\d{2})?$/) &&
-    !line.toLowerCase().includes("barcode") &&
-    !line.toLowerCase().includes("google") &&
-    !line.toLowerCase().includes("shopping") &&
-    !line.toLowerCase().includes("sponsored") &&
-    !line.toLowerCase().includes("results")
-  );
-
-  let clean = likely || text;
-  clean = clean.replace(/\s+/g, " ").trim();
-
-  if (clean.length <= 50) return clean;
-
-  clean = clean.slice(0, 50);
-  clean = clean.slice(0, clean.lastIndexOf(" "));
-  return clean.trim();
-}
-
-function findPrice(text) {
-  const prices = text.match(/\$\s?\d{1,4}(?:,\d{3})*(?:\.\d{2})?/g);
-  if (!prices || prices.length === 0) return "";
-  return prices[0].replace(/\s/g, "");
-}
-
-function guessFrom(text) {
-  const lower = text.toLowerCase();
-
-  if (lower.includes("home depot") || lower.includes("homedepot")) return "Home Depot";
-  if (lower.includes("target")) return "Target";
-  if (lower.includes("lowe")) return "Lowe's";
-  if (lower.includes("walmart")) return "Walmart";
-  if (lower.includes("amazon")) return "Amazon";
-
-  return "";
-}
-
 function buildDescription(lotEl) {
   const master = document.getElementById("masterDescription").value;
-  const title = lotEl.querySelector(".title").value;
-  const price = lotEl.querySelector(".price").value;
-  const from = lotEl.querySelector(".from").value;
-
   return master
-    .replaceAll("{TITLE}", title)
-    .replaceAll("{PRICE}", price)
-    .replaceAll("{FROM}", from);
+    .replaceAll("{TITLE}", lotEl.querySelector(".title").value)
+    .replaceAll("{PRICE}", lotEl.querySelector(".price").value)
+    .replaceAll("{FROM}", lotEl.querySelector(".from").value);
 }
 
 function refreshDescription(lotEl) {
-  if (document.getElementById("copyDescription").checked) {
+  const copy = document.getElementById("copyDescription");
+  if (!copy || copy.checked) {
     lotEl.querySelector(".description").value = buildDescription(lotEl);
   }
 }
 
 function getFiles(lotEl, key) {
-  const store = photoStore.get(lotEl) || {};
-  return store[key] || [];
+  const store = photoStore.get(lotEl);
+  return store ? store[key] : [];
 }
 
-function setFiles(lotEl, key, newFiles, append = true) {
-  const store = photoStore.get(lotEl) || {
-    stock: [],
-    info: [],
-    person: []
-  };
-
-  if (append) {
-    store[key] = [...store[key], ...newFiles];
-  } else {
-    store[key] = newFiles;
-  }
-
+function addFiles(lotEl, key, files) {
+  const store = photoStore.get(lotEl) || { stock: [], info: [], person: [] };
+  store[key] = store[key].concat(Array.from(files).filter(f => f.type.startsWith("image/")));
   photoStore.set(lotEl, store);
-}
-
-function makePreviews(lotEl, key, previewDiv) {
-  previewDiv.innerHTML = "";
-  const files = getFiles(lotEl, key).slice(0, 10);
-
-  files.forEach(file => {
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    previewDiv.appendChild(img);
-  });
-}
-
-async function addFilesToSlot(lotEl, key, files) {
-  const fileList = Array.from(files).filter(file => file.type.startsWith("image/"));
-  if (!fileList.length) return;
-
-  setFiles(lotEl, key, fileList, true);
-
-  const previewSelector =
-    key === "stock" ? ".stockPreview" :
-    key === "info" ? ".infoPreview" :
-    ".personPreview";
-
-  makePreviews(lotEl, key, lotEl.querySelector(previewSelector));
+  showPreview(lotEl, key);
 
   if (key === "info") {
-    await runOCR(lotEl);
+    runOCR(lotEl);
   }
 }
 
-function setupDropSlot(lotEl, slotEl, inputEl, key) {
-  slotEl.addEventListener("click", () => inputEl.click());
+function showPreview(lotEl, key) {
+  const preview =
+    key === "stock" ? lotEl.querySelector(".stockPreview") :
+    key === "info" ? lotEl.querySelector(".infoPreview") :
+    lotEl.querySelector(".personPreview");
 
-  inputEl.addEventListener("change", async e => {
-    await addFilesToSlot(lotEl, key, e.target.files);
-    inputEl.value = "";
+  preview.innerHTML = "";
+
+  getFiles(lotEl, key).forEach(file => {
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    preview.appendChild(img);
+  });
+}
+
+function setupSlot(lotEl, slot, input, key) {
+  slot.addEventListener("click", () => input.click());
+
+  input.addEventListener("change", e => {
+    addFiles(lotEl, key, e.target.files);
+    input.value = "";
   });
 
-  slotEl.addEventListener("dragover", e => {
+  slot.addEventListener("dragover", e => {
     e.preventDefault();
-    slotEl.classList.add("dragover");
+    slot.classList.add("dragover");
   });
 
-  slotEl.addEventListener("dragleave", () => {
-    slotEl.classList.remove("dragover");
+  slot.addEventListener("dragleave", () => {
+    slot.classList.remove("dragover");
   });
 
-  slotEl.addEventListener("drop", async e => {
+  slot.addEventListener("drop", e => {
     e.preventDefault();
-    slotEl.classList.remove("dragover");
-    await addFilesToSlot(lotEl, key, e.dataTransfer.files);
+    slot.classList.remove("dragover");
+    addFiles(lotEl, key, e.dataTransfer.files);
   });
 }
 
@@ -163,128 +98,117 @@ function applyMasterToLot(lotEl) {
   refreshDescription(lotEl);
 }
 
-function applyMasterToExistingLots() {
-  const lotEls = Array.from(document.querySelectorAll(".lot-card"));
-  lotEls.forEach(lotEl => applyMasterToLot(lotEl));
-}
-
 function createRows() {
   lotsDiv.innerHTML = "";
-
   const count = Number(document.getElementById("lotCount").value || 1);
 
   for (let i = 0; i < count; i++) {
     const node = template.content.cloneNode(true);
     const lotEl = node.querySelector(".lot-card");
 
-    photoStore.set(lotEl, {
-      stock: [],
-      info: [],
-      person: []
-    });
-
     lotEl.querySelector("h2").textContent = `Lot Line ${i + 1}`;
+    photoStore.set(lotEl, { stock: [], info: [], person: [] });
 
-    [".title", ".price", ".from"].forEach(sel => {
-      lotEl.querySelector(sel).addEventListener("input", () => refreshDescription(lotEl));
-      lotEl.querySelector(sel).addEventListener("change", () => refreshDescription(lotEl));
-    });
+    lotEl.querySelector(".title").addEventListener("input", () => refreshDescription(lotEl));
+    lotEl.querySelector(".price").addEventListener("input", () => refreshDescription(lotEl));
+    lotEl.querySelector(".from").addEventListener("change", () => refreshDescription(lotEl));
 
-    setupDropSlot(
-      lotEl,
-      lotEl.querySelector('[data-key="stock"]'),
-      lotEl.querySelector(".stockPhotos"),
-      "stock"
-    );
+    const slots = lotEl.querySelectorAll(".drop-slot");
 
-    setupDropSlot(
-      lotEl,
-      lotEl.querySelector('[data-key="info"]'),
-      lotEl.querySelector(".infoPhotos"),
-      "info"
-    );
-
-    setupDropSlot(
-      lotEl,
-      lotEl.querySelector('[data-key="person"]'),
-      lotEl.querySelector(".personPhotos"),
-      "person"
-    );
+    setupSlot(lotEl, slots[0], lotEl.querySelector(".stockPhotos"), "stock");
+    setupSlot(lotEl, slots[1], lotEl.querySelector(".infoPhotos"), "info");
+    setupSlot(lotEl, slots[2], lotEl.querySelector(".personPhotos"), "person");
 
     applyMasterToLot(lotEl);
     lotsDiv.appendChild(node);
   }
 }
 
+function findPrice(text) {
+  const prices = text.match(/\$\s?\d{1,4}(?:,\d{3})*(?:\.\d{2})?/g);
+  return prices ? prices[0].replace(/\s/g, "") : "";
+}
+
+function guessFrom(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes("home depot") || lower.includes("homedepot")) return "Home Depot";
+  if (lower.includes("target")) return "Target";
+  if (lower.includes("walmart")) return "Walmart";
+  if (lower.includes("lowe")) return "Lowe's";
+  if (lower.includes("amazon")) return "Amazon";
+  return "";
+}
+
+function shortenTitle(text) {
+  const lines = text.split("\n").map(x => x.trim()).filter(Boolean);
+  let title = lines.find(line =>
+    line.length > 8 &&
+    line.length < 120 &&
+    !line.includes("$") &&
+    !line.toLowerCase().includes("barcode") &&
+    !line.toLowerCase().includes("shopping")
+  ) || "";
+
+  title = title.replace(/\s+/g, " ").trim();
+  if (title.length > 50) title = title.slice(0, 50).trim();
+  return title;
+}
+
 async function runOCR(lotEl) {
   const files = getFiles(lotEl, "info").slice(0, 5);
   const status = lotEl.querySelector(".status");
 
-  if (!files.length) {
-    status.textContent = "Add info/price photos in Slot 2 first.";
-    return;
-  }
+  if (!files.length) return;
 
-  status.textContent = "Reading Slot 2 now...";
+  status.textContent = "Reading Slot 2...";
 
-  let fullText = "";
+  let text = "";
 
   for (const file of files) {
     const result = await Tesseract.recognize(file, "eng");
-    fullText += "\n" + result.data.text;
+    text += "\n" + result.data.text;
   }
 
-  const price = findPrice(fullText);
-  const from = guessFrom(fullText);
-  const title = shortenTitle(fullText);
+  const title = shortenTitle(text);
+  const price = findPrice(text);
+  const from = guessFrom(text);
 
   if (title) lotEl.querySelector(".title").value = title;
   if (price) lotEl.querySelector(".price").value = price;
   if (from) lotEl.querySelector(".from").value = from;
 
   refreshDescription(lotEl);
-
-  status.textContent = "Slot 2 read complete. Please review title, store, and price.";
+  status.textContent = "Slot 2 read complete. Review title and price.";
 }
 
-function getLotRows() {
-  const lotEls = Array.from(document.querySelectorAll(".lot-card"));
-
-  return lotEls
-    .map(lotEl => ({
-      lotNumber: lotEl.querySelector(".lotNumber").value.trim(),
-      sellerCode: lotEl.querySelector(".sellerCode").value.trim(),
-      title: lotEl.querySelector(".title").value.trim(),
-      startBid: lotEl.querySelector(".startBid").value.trim(),
-      description: lotEl.querySelector(".description").value
-    }))
-    .filter(row => row.lotNumber || row.title);
+function applyMasterToExistingLots() {
+  document.querySelectorAll(".lot-card").forEach(lotEl => applyMasterToLot(lotEl));
 }
 
 function download(filename, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-
   a.href = url;
   a.download = filename;
   a.click();
-
   URL.revokeObjectURL(url);
 }
 
 function downloadCSV() {
   const headers = ["Lot #", "Seller Code", "Title", "Start Bid", "Description"];
-  const rows = getLotRows();
+  const rows = Array.from(document.querySelectorAll(".lot-card"))
+    .map(lotEl => [
+      lotEl.querySelector(".lotNumber").value,
+      lotEl.querySelector(".sellerCode").value,
+      lotEl.querySelector(".title").value,
+      lotEl.querySelector(".startBid").value,
+      lotEl.querySelector(".description").value
+    ])
+    .filter(row => row[0] || row[2]);
 
   const csv = [
     headers.map(csvEscape).join(","),
-    ...rows.map(r => [
-      r.lotNumber,
-      r.sellerCode,
-      r.title,
-      r.startBid,
-      r.description
-    ].map(csvEscape).join(","))
+    ...rows.map(row => row.map(csvEscape).join(","))
   ].join("\r\n");
 
   download("auctionflex_import.csv", new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -292,41 +216,33 @@ function downloadCSV() {
 
 function extFromFile(file) {
   const name = file.name.toLowerCase();
-
   if (name.endsWith(".png")) return ".png";
   if (name.endsWith(".webp")) return ".webp";
-  if (name.endsWith(".jpeg")) return ".jpg";
-
   return ".jpg";
 }
 
 async function downloadImageZip() {
   const zip = new JSZip();
-  const lotEls = Array.from(document.querySelectorAll(".lot-card"));
-
   let count = 0;
 
-  for (const lotEl of lotEls) {
+  document.querySelectorAll(".lot-card").forEach(lotEl => {
     const lotNumber = lotEl.querySelector(".lotNumber").value.trim();
-    if (!lotNumber) continue;
-
-    const stockFiles = getFiles(lotEl, "stock").slice(0, 5);
-    const personFiles = getFiles(lotEl, "person");
+    if (!lotNumber) return;
 
     let imageNumber = 1;
 
-    for (const file of stockFiles) {
+    getFiles(lotEl, "stock").slice(0, 5).forEach(file => {
       zip.file(`${lotNumber}_${imageNumber}${extFromFile(file)}`, file);
       imageNumber++;
       count++;
-    }
+    });
 
-    for (const file of personFiles) {
+    getFiles(lotEl, "person").forEach(file => {
       zip.file(`${lotNumber}_${imageNumber}${extFromFile(file)}`, file);
       imageNumber++;
       count++;
-    }
-  }
+    });
+  });
 
   if (!count) {
     alert("No Slot 1 or Slot 3 images found.");
