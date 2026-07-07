@@ -10,7 +10,7 @@
   <main>
     <header class="top">
       <h1>AuctionFlex CSV Builder</h1>
-      <p>Build AuctionFlex CSVs + renamed image ZIPs.</p>
+      <p>Build AuctionFlex CSVs + renamed image ZIPs. Everything runs in your browser.</p>
     </header>
 
     <section class="panel">
@@ -143,37 +143,52 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
 
       <div class="photo-slots">
         <div class="drop-slot" data-key="stock">
-          <input class="stockPhotos hiddenFile" type="file" accept="image/*" capture="environment" multiple />
+          <input class="stockGallery hiddenFile" type="file" accept="image/*" multiple>
+          <input class="stockCamera hiddenFile" type="file" accept="image/*" capture="environment">
           <div class="drop-inner">
             <div class="icon">📷</div>
             <span class="slot-name">SLOT 1</span>
             <strong>Stock Photos</strong>
-            <em>Click, tap, or drop photos here</em>
-            <small>Included in image ZIP</small>
+            <em>Included in image ZIP</em>
+            <div class="button-row">
+              <button type="button" class="slot-btn galleryBtn">Choose Existing</button>
+              <button type="button" class="slot-btn cameraBtn">Take Photo</button>
+            </div>
+            <small>Drag/drop works on computer</small>
           </div>
           <div class="preview stockPreview"></div>
         </div>
 
         <div class="drop-slot info-slot" data-key="info">
-          <input class="infoPhotos hiddenFile" type="file" accept="image/*" capture="environment" multiple />
+          <input class="infoGallery hiddenFile" type="file" accept="image/*" multiple>
+          <input class="infoCamera hiddenFile" type="file" accept="image/*" capture="environment">
           <div class="drop-inner">
             <div class="icon">🔎</div>
             <span class="slot-name">SLOT 2</span>
             <strong>Info / Price Photos</strong>
-            <em>Click, tap, or drop photos here</em>
+            <em>OCR only, not zipped</em>
+            <div class="button-row">
+              <button type="button" class="slot-btn galleryBtn">Choose Existing</button>
+              <button type="button" class="slot-btn cameraBtn">Take Photo</button>
+            </div>
             <small>Auto-reads title + price</small>
           </div>
           <div class="preview infoPreview"></div>
         </div>
 
         <div class="drop-slot" data-key="person">
-          <input class="personPhotos hiddenFile" type="file" accept="image/*" capture="environment" multiple />
+          <input class="personGallery hiddenFile" type="file" accept="image/*" multiple>
+          <input class="personCamera hiddenFile" type="file" accept="image/*" capture="environment">
           <div class="drop-inner">
             <div class="icon">🏷️</div>
             <span class="slot-name">SLOT 3</span>
             <strong>In-Person Photos</strong>
-            <em>Click, tap, or drop photos here</em>
-            <small>Included in image ZIP</small>
+            <em>Included in image ZIP</em>
+            <div class="button-row">
+              <button type="button" class="slot-btn galleryBtn">Choose Existing</button>
+              <button type="button" class="slot-btn cameraBtn">Take Photo</button>
+            </div>
+            <small>Drag/drop works on computer</small>
           </div>
           <div class="preview personPreview"></div>
         </div>
