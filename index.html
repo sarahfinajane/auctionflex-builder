@@ -10,10 +10,10 @@
   <main>
     <header class="top">
       <h1>AuctionFlex CSV Builder</h1>
-      <p>CSV builder + photo slots + camera capture + renamed image ZIP.</p>
+      <p>Build AuctionFlex CSVs + renamed image ZIPs.</p>
     </header>
 
-    <section class="panel master-panel">
+    <section class="panel">
       <div class="section-title">MASTER SETTINGS</div>
 
       <div class="grid">
@@ -53,14 +53,14 @@
         <label><input name="masterFrom" type="radio" value="Walmart" /> Walmart</label>
         <label><input name="masterFrom" type="radio" value="Lowe's" /> Lowe's</label>
         <label><input name="masterFrom" type="radio" value="Amazon" /> Amazon</label>
-        <label><input name="masterFrom" type="radio" value="" /> Blank / Unknown</label>
+        <label><input name="masterFrom" type="radio" value="" /> Blank</label>
       </div>
 
       <div class="section-title small-title">MASTER DESCRIPTION</div>
 
       <label class="checkbox-line">
         <input id="copyDescription" type="checkbox" checked />
-        Copy this master description to every lot
+        Copy master description to every lot
       </label>
 
       <textarea id="masterDescription" rows="12">Description:
@@ -80,10 +80,10 @@ SJ
 
 LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM THURSDAY-SATURDAY DURING BUSINESS HOURS ALL BIDS ARE FINAL. ONCE A BID IS PLACED WE CANNOT CHANGE IT. NO SHIPPING AND NO DELIVERY AVAILABLE. THANK YOU.</textarea>
 
-      <p class="hint">Placeholders you can use: {TITLE}, {PRICE}, {FROM}</p>
+      <p class="hint">Placeholders: {TITLE}, {PRICE}, {FROM}</p>
 
       <button id="createRows" class="primary-btn">Create / Reset Lot Lines</button>
-      <button id="applyMaster" class="secondary-btn">Apply Master Settings To Existing Lots</button>
+      <button id="applyMaster" class="secondary-btn">Apply Master To Existing Lots</button>
     </section>
 
     <section class="panel">
@@ -101,7 +101,7 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
     <article class="lot-card">
       <div class="lot-header">
         <h2>Lot Line</h2>
-        <button class="ocrBtn" type="button">Extract Title + Price From Slot 2</button>
+        <span class="ocrStatus">Slot 2 auto-reads when photos are added.</span>
       </div>
 
       <div class="section-title small-title">LOT DETAILS</div>
@@ -125,7 +125,7 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
 
         <label>From
           <select class="from">
-            <option value="">Blank / Unknown</option>
+            <option value="">Blank</option>
             <option value="Home Depot">Home Depot</option>
             <option value="Target">Target</option>
             <option value="Walmart">Walmart</option>
@@ -142,57 +142,44 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
       <div class="section-title small-title">PHOTO SLOTS</div>
 
       <div class="photo-slots">
-        <div class="photo-box">
-          <span class="slot-name">SLOT 1</span>
-          <strong>Stock Photos</strong>
-          <em>Goes into image ZIP</em>
-
-          <label class="upload-btn">Upload Stock Photos
-            <input class="stockPhotos" type="file" accept="image/*" multiple />
-          </label>
-
-          <label class="camera-btn">Take Stock Photo
-            <input class="stockCamera" type="file" accept="image/*" capture="environment" />
-          </label>
-
+        <div class="drop-slot" data-key="stock">
+          <input class="stockPhotos hiddenFile" type="file" accept="image/*" capture="environment" multiple />
+          <div class="drop-inner">
+            <div class="icon">📷</div>
+            <span class="slot-name">SLOT 1</span>
+            <strong>Stock Photos</strong>
+            <em>Click, tap, or drop photos here</em>
+            <small>Included in image ZIP</small>
+          </div>
           <div class="preview stockPreview"></div>
         </div>
 
-        <div class="photo-box info-box">
-          <span class="slot-name">SLOT 2</span>
-          <strong>Info / Price Photos</strong>
-          <em>OCR only, not zipped</em>
-
-          <label class="upload-btn">Upload Info Photos
-            <input class="infoPhotos" type="file" accept="image/*" multiple />
-          </label>
-
-          <label class="camera-btn">Take Info Photo
-            <input class="infoCamera" type="file" accept="image/*" capture="environment" />
-          </label>
-
+        <div class="drop-slot info-slot" data-key="info">
+          <input class="infoPhotos hiddenFile" type="file" accept="image/*" capture="environment" multiple />
+          <div class="drop-inner">
+            <div class="icon">🔎</div>
+            <span class="slot-name">SLOT 2</span>
+            <strong>Info / Price Photos</strong>
+            <em>Click, tap, or drop photos here</em>
+            <small>Auto-reads title + price</small>
+          </div>
           <div class="preview infoPreview"></div>
         </div>
 
-        <div class="photo-box">
-          <span class="slot-name">SLOT 3</span>
-          <strong>In-Person Photos</strong>
-          <em>Goes into image ZIP</em>
-
-          <label class="upload-btn">Upload In-Person Photos
-            <input class="personPhotos" type="file" accept="image/*" multiple />
-          </label>
-
-          <label class="camera-btn">Take In-Person Photo
-            <input class="personCamera" type="file" accept="image/*" capture="environment" />
-          </label>
-
+        <div class="drop-slot" data-key="person">
+          <input class="personPhotos hiddenFile" type="file" accept="image/*" capture="environment" multiple />
+          <div class="drop-inner">
+            <div class="icon">🏷️</div>
+            <span class="slot-name">SLOT 3</span>
+            <strong>In-Person Photos</strong>
+            <em>Click, tap, or drop photos here</em>
+            <small>Included in image ZIP</small>
+          </div>
           <div class="preview personPreview"></div>
         </div>
       </div>
 
       <div class="section-title small-title">DESCRIPTION</div>
-
       <textarea class="description" rows="9"></textarea>
 
       <div class="status"></div>
