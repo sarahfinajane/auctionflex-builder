@@ -10,7 +10,7 @@
   <main>
     <header class="top">
       <h1>AuctionFlex CSV Builder</h1>
-      <p>Build CSV rows, extract title/price from info photos, and download renamed image files.</p>
+      <p>CSV builder + photo slots + camera capture + renamed image ZIP.</p>
     </header>
 
     <section class="panel master-panel">
@@ -32,15 +32,37 @@
 
       <label class="checkbox-line">
         <input id="copySellerCode" type="checkbox" checked />
-        Copy seller code to every line
+        Copy seller code to every lot
       </label>
 
       <label class="checkbox-line">
         <input id="copyStartBid" type="checkbox" checked />
-        Copy start bid to every line
+        Copy start bid to every lot
       </label>
 
-      <label>Master Description</label>
+      <div class="section-title small-title">MASTER FROM STORE</div>
+
+      <label class="checkbox-line">
+        <input id="copyFrom" type="checkbox" checked />
+        Copy selected store to every lot
+      </label>
+
+      <div class="store-list">
+        <label><input name="masterFrom" type="radio" value="Home Depot" checked /> Home Depot</label>
+        <label><input name="masterFrom" type="radio" value="Target" /> Target</label>
+        <label><input name="masterFrom" type="radio" value="Walmart" /> Walmart</label>
+        <label><input name="masterFrom" type="radio" value="Lowe's" /> Lowe's</label>
+        <label><input name="masterFrom" type="radio" value="Amazon" /> Amazon</label>
+        <label><input name="masterFrom" type="radio" value="" /> Blank / Unknown</label>
+      </div>
+
+      <div class="section-title small-title">MASTER DESCRIPTION</div>
+
+      <label class="checkbox-line">
+        <input id="copyDescription" type="checkbox" checked />
+        Copy this master description to every lot
+      </label>
+
       <textarea id="masterDescription" rows="12">Description:
 {TITLE}
 
@@ -61,6 +83,7 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
       <p class="hint">Placeholders you can use: {TITLE}, {PRICE}, {FROM}</p>
 
       <button id="createRows" class="primary-btn">Create / Reset Lot Lines</button>
+      <button id="applyMaster" class="secondary-btn">Apply Master Settings To Existing Lots</button>
     </section>
 
     <section class="panel">
@@ -101,7 +124,14 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
         </label>
 
         <label>From
-          <input class="from" placeholder="Home Depot, Target, Lowe's..." />
+          <select class="from">
+            <option value="">Blank / Unknown</option>
+            <option value="Home Depot">Home Depot</option>
+            <option value="Target">Target</option>
+            <option value="Walmart">Walmart</option>
+            <option value="Lowe's">Lowe's</option>
+            <option value="Amazon">Amazon</option>
+          </select>
         </label>
 
         <label>Retail Price
@@ -112,29 +142,53 @@ LOTS MAY BE DAMAGED OR MISSING PIECES. PREVIEW FOR ALL LOTS IS AVAILABLE FROM TH
       <div class="section-title small-title">PHOTO SLOTS</div>
 
       <div class="photo-slots">
-        <label class="photo-box">
+        <div class="photo-box">
           <span class="slot-name">SLOT 1</span>
           <strong>Stock Photos</strong>
-          <em>Uploaded to image ZIP</em>
-          <input class="stockPhotos" type="file" accept="image/*" multiple />
-          <div class="preview stockPreview"></div>
-        </label>
+          <em>Goes into image ZIP</em>
 
-        <label class="photo-box info-box">
+          <label class="upload-btn">Upload Stock Photos
+            <input class="stockPhotos" type="file" accept="image/*" multiple />
+          </label>
+
+          <label class="camera-btn">Take Stock Photo
+            <input class="stockCamera" type="file" accept="image/*" capture="environment" />
+          </label>
+
+          <div class="preview stockPreview"></div>
+        </div>
+
+        <div class="photo-box info-box">
           <span class="slot-name">SLOT 2</span>
           <strong>Info / Price Photos</strong>
-          <em>Used for OCR only</em>
-          <input class="infoPhotos" type="file" accept="image/*" multiple />
-          <div class="preview infoPreview"></div>
-        </label>
+          <em>OCR only, not zipped</em>
 
-        <label class="photo-box">
+          <label class="upload-btn">Upload Info Photos
+            <input class="infoPhotos" type="file" accept="image/*" multiple />
+          </label>
+
+          <label class="camera-btn">Take Info Photo
+            <input class="infoCamera" type="file" accept="image/*" capture="environment" />
+          </label>
+
+          <div class="preview infoPreview"></div>
+        </div>
+
+        <div class="photo-box">
           <span class="slot-name">SLOT 3</span>
           <strong>In-Person Photos</strong>
-          <em>Uploaded to image ZIP</em>
-          <input class="personPhotos" type="file" accept="image/*" multiple />
+          <em>Goes into image ZIP</em>
+
+          <label class="upload-btn">Upload In-Person Photos
+            <input class="personPhotos" type="file" accept="image/*" multiple />
+          </label>
+
+          <label class="camera-btn">Take In-Person Photo
+            <input class="personCamera" type="file" accept="image/*" capture="environment" />
+          </label>
+
           <div class="preview personPreview"></div>
-        </label>
+        </div>
       </div>
 
       <div class="section-title small-title">DESCRIPTION</div>
