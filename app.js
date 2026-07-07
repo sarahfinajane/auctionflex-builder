@@ -14,13 +14,36 @@ window.addEventListener("DOMContentLoaded", () => {
     description: document.getElementById("description")
   };
 
+  function selectedMasterFrom() {
+    const selected = document.querySelector("input[name='masterFrom']:checked");
+    return selected ? selected.value : "";
+  }
+
+  function masterSeller() {
+    return document.getElementById("copySellerCode").checked
+      ? document.getElementById("masterSellerCode").value
+      : "";
+  }
+
+  function masterStartBid() {
+    return document.getElementById("copyStartBid").checked
+      ? document.getElementById("masterStartBid").value
+      : "";
+  }
+
+  function masterFrom() {
+    return document.getElementById("copyFrom").checked
+      ? selectedMasterFrom()
+      : "";
+  }
+
   function newLot() {
-    return {
+    const lot = {
       lotNumber: "",
-      sellerCode: document.getElementById("copySellerCode").checked ? document.getElementById("masterSellerCode").value : "",
-      startBid: document.getElementById("copyStartBid").checked ? document.getElementById("masterStartBid").value : "",
+      sellerCode: masterSeller(),
+      startBid: masterStartBid(),
       title: "",
-      from: document.getElementById("copyFrom").checked ? selectedMasterFrom() : "",
+      from: masterFrom(),
       price: "",
       descriptionEdited: false,
       description: "",
@@ -28,11 +51,38 @@ window.addEventListener("DOMContentLoaded", () => {
       info: [],
       person: []
     };
+
+    lot.description = buildDescription(lot);
+    return lot;
   }
 
-  function selectedMasterFrom() {
-    const selected = document.querySelector("input[name='masterFrom']:checked");
-    return selected ? selected.value : "";
+  function isEmptyLot(lot) {
+    return !lot.lotNumber &&
+      !lot.title &&
+      !lot.price &&
+      !lot.descriptionEdited &&
+      lot.stock.length === 0 &&
+      lot.info.length === 0 &&
+      lot.person.length === 0;
+  }
+
+  function applyMasterDefaultsToLot(lot) {
+    // This is the fix: when you move to an unused lot, the checked master settings drop in automatically.
+    if (document.getElementById("copySellerCode").checked && !lot.sellerCode) {
+      lot.sellerCode = document.getElementById("masterSellerCode").value;
+    }
+
+    if (document.getElementById("copyStartBid").checked && !lot.startBid) {
+      lot.startBid = document.getElementById("masterStartBid").value;
+    }
+
+    if (document.getElementById("copyFrom").checked && !lot.from) {
+      lot.from = selectedMasterFrom();
+    }
+
+    if (document.getElementById("copyDescription").checked && !lot.descriptionEdited) {
+      lot.description = buildDescription(lot);
+    }
   }
 
   function buildDescription(lot) {
@@ -44,6 +94,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function saveCurrentLot() {
     if (!lots.length) return;
+
     const lot = lots[currentIndex];
     lot.lotNumber = fields.lotNumber.value.trim();
     lot.sellerCode = fields.sellerCode.value.trim();
@@ -52,23 +103,23 @@ window.addEventListener("DOMContentLoaded", () => {
     lot.from = fields.from.value;
     lot.price = fields.price.value.trim();
     lot.description = fields.description.value;
+
     document.getElementById("savedStatus").textContent = "Saved automatically";
   }
 
   function loadCurrentLot() {
     const lot = lots[currentIndex];
+
+    applyMasterDefaultsToLot(lot);
+
     fields.lotNumber.value = lot.lotNumber;
     fields.sellerCode.value = lot.sellerCode;
     fields.startBid.value = lot.startBid;
     fields.title.value = lot.title;
     fields.from.value = lot.from;
     fields.price.value = lot.price;
-
-    if (!lot.descriptionEdited && document.getElementById("copyDescription").checked) {
-      lot.description = buildDescription(lot);
-    }
-
     fields.description.value = lot.description;
+
     document.getElementById("lotPosition").textContent = `Lot ${currentIndex + 1} of ${lots.length}`;
     document.getElementById("status").textContent = "";
     renderPreviews();
@@ -79,6 +130,7 @@ window.addEventListener("DOMContentLoaded", () => {
     lot.title = fields.title.value.trim();
     lot.from = fields.from.value;
     lot.price = fields.price.value.trim();
+
     if (!lot.descriptionEdited && document.getElementById("copyDescription").checked) {
       lot.description = buildDescription(lot);
       fields.description.value = lot.description;
@@ -86,7 +138,6 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function createLots() {
-    saveCurrentLot();
     const count = Number(document.getElementById("lotCount").value || 1);
     lots = Array.from({ length: count }, () => newLot());
     currentIndex = 0;
@@ -95,24 +146,45 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function applyMasterAll() {
     saveCurrentLot();
+
     lots.forEach(lot => {
-      if (document.getElementById("copySellerCode").checked) lot.sellerCode = document.getElementById("masterSellerCode").value;
-      if (document.getElementById("copyStartBid").checked) lot.startBid = document.getElementById("masterStartBid").value;
-      if (document.getElementById("copyFrom").checked) lot.from = selectedMasterFrom();
-      if (document.getElementById("copyDescription").checked && !lot.descriptionEdited) lot.description = buildDescription(lot);
+      if (document.getElementById("copySellerCode").checked) {
+        lot.sellerCode = document.getElementById("masterSellerCode").value;
+      }
+
+      if (document.getElementById("copyStartBid").checked) {
+        lot.startBid = document.getElementById("masterStartBid").value;
+      }
+
+      if (document.getElementById("copyFrom").checked) {
+        lot.from = selectedMasterFrom();
+      }
+
+      if (document.getElementById("copyDescription").checked && !lot.descriptionEdited) {
+        lot.description = buildDescription(lot);
+      }
     });
+
     loadCurrentLot();
   }
 
   function goNext() {
     saveCurrentLot();
-    if (currentIndex < lots.length - 1) currentIndex++;
+
+    if (currentIndex < lots.length - 1) {
+      currentIndex++;
+    }
+
     loadCurrentLot();
   }
 
   function goPrev() {
     saveCurrentLot();
-    if (currentIndex > 0) currentIndex--;
+
+    if (currentIndex > 0) {
+      currentIndex--;
+    }
+
     loadCurrentLot();
   }
 
@@ -123,13 +195,18 @@ window.addEventListener("DOMContentLoaded", () => {
     lots[currentIndex][key] = lots[currentIndex][key].concat(files);
     renderPreviews();
 
-    if (key === "info") runOCR();
+    if (key === "info") {
+      runOCR();
+    }
+
+    saveCurrentLot();
   }
 
   function renderPreviews() {
     ["stock", "info", "person"].forEach(key => {
       const preview = document.getElementById(`${key}Preview`);
       preview.innerHTML = "";
+
       lots[currentIndex][key].slice(0, 12).forEach(file => {
         const img = document.createElement("img");
         img.src = URL.createObjectURL(file);
@@ -160,11 +237,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
     document.querySelectorAll(".drop-slot").forEach(slot => {
       const key = slot.dataset.key;
+
       slot.addEventListener("dragover", e => {
         e.preventDefault();
         slot.classList.add("dragover");
       });
-      slot.addEventListener("dragleave", () => slot.classList.remove("dragover"));
+
+      slot.addEventListener("dragleave", () => {
+        slot.classList.remove("dragover");
+      });
+
       slot.addEventListener("drop", e => {
         e.preventDefault();
         slot.classList.remove("dragover");
@@ -179,6 +261,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   async function openDesktopCamera(key) {
     activeCameraKey = key;
+
     const panel = document.getElementById("cameraPanel");
     const video = document.getElementById("cameraVideo");
 
@@ -202,11 +285,13 @@ window.addEventListener("DOMContentLoaded", () => {
       activeStream.getTracks().forEach(track => track.stop());
       activeStream = null;
     }
+
     document.getElementById("cameraPanel").classList.add("hidden");
   }
 
   function capturePhoto() {
     const video = document.getElementById("cameraVideo");
+
     if (!activeCameraKey || !video.videoWidth) return;
 
     const canvas = document.createElement("canvas");
@@ -228,16 +313,19 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function guessFrom(text) {
     const lower = text.toLowerCase();
+
     if (lower.includes("home depot") || lower.includes("homedepot")) return "Home Depot";
     if (lower.includes("target")) return "Target";
     if (lower.includes("walmart")) return "Walmart";
     if (lower.includes("lowe")) return "Lowe's";
     if (lower.includes("amazon")) return "Amazon";
+
     return "";
   }
 
   function shortenTitle(text) {
     const lines = text.split("\n").map(x => x.trim()).filter(Boolean);
+
     let title = lines.find(line =>
       line.length > 8 &&
       line.length < 120 &&
@@ -247,11 +335,14 @@ window.addEventListener("DOMContentLoaded", () => {
       !line.toLowerCase().includes("sponsored") &&
       !line.toLowerCase().includes("google")
     ) || "";
+
     title = title.replace(/\s+/g, " ").trim();
+
     if (title.length > 50) {
       title = title.slice(0, 50);
       if (title.includes(" ")) title = title.slice(0, title.lastIndexOf(" "));
     }
+
     return title.trim();
   }
 
@@ -261,6 +352,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const status = document.getElementById("status");
 
     if (!files.length) return;
+
     if (!window.Tesseract) {
       status.textContent = "OCR library did not load. You can type manually.";
       return;
@@ -270,6 +362,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     try {
       let text = "";
+
       for (const file of files) {
         const result = await Tesseract.recognize(file, "eng");
         text += "\n" + result.data.text;
@@ -285,6 +378,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
       updateDescriptionFromFields();
       saveCurrentLot();
+
       status.textContent = "Slot 2 read complete. Review title, store, and price.";
     } catch (err) {
       status.textContent = "OCR failed. You can still type title and price manually.";
@@ -299,14 +393,17 @@ window.addEventListener("DOMContentLoaded", () => {
   function download(filename, blob) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+
     a.href = url;
     a.download = filename;
     a.click();
+
     URL.revokeObjectURL(url);
   }
 
   function downloadCSV() {
     saveCurrentLot();
+
     const headers = ["Lot #", "Seller Code", "Title", "Start Bid", "Description"];
     const rows = lots
       .filter(lot => lot.lotNumber || lot.title)
@@ -322,8 +419,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function extFromFile(file) {
     const name = file.name.toLowerCase();
+
     if (name.endsWith(".png")) return ".png";
     if (name.endsWith(".webp")) return ".webp";
+
     return ".jpg";
   }
 
@@ -340,6 +439,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     lots.forEach(lot => {
       if (!lot.lotNumber) return;
+
       let imageNumber = 1;
 
       lot.stock.slice(0, 5).forEach(file => {
@@ -371,8 +471,10 @@ window.addEventListener("DOMContentLoaded", () => {
       } else {
         updateDescriptionFromFields();
       }
+
       saveCurrentLot();
     });
+
     field.addEventListener("change", () => {
       updateDescriptionFromFields();
       saveCurrentLot();
