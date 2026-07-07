@@ -120,8 +120,7 @@ textarea {
 }
 
 .primary-btn,
-.secondary-btn,
-.ocrBtn {
+.secondary-btn {
   border: none;
   border-radius: 12px;
   padding: 13px 18px;
@@ -132,22 +131,15 @@ textarea {
   margin-bottom: 8px;
 }
 
-.primary-btn,
-.ocrBtn {
+.primary-btn {
   background: #1f1f1f;
   color: white;
 }
 
 .secondary-btn {
-  background: #fff;
+  background: white;
   color: #1f1f1f;
   border: 3px solid #1f1f1f;
-}
-
-.primary-btn:hover,
-.secondary-btn:hover,
-.ocrBtn:hover {
-  opacity: .85;
 }
 
 .lot-header {
@@ -161,23 +153,54 @@ textarea {
   margin: 0;
 }
 
+.ocrStatus {
+  background: #fff4c7;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+}
+
 .photo-slots {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
 }
 
-.photo-box {
-  border: 4px dashed #333;
-  border-radius: 18px;
-  min-height: 310px;
+.drop-slot {
+  border: 5px dashed #1f1f1f;
+  border-radius: 22px;
+  min-height: 330px;
   padding: 16px;
-  text-align: center;
   background: #fafafa;
+  text-align: center;
+  cursor: pointer;
+  transition: .15s ease;
 }
 
-.info-box {
+.drop-slot:hover,
+.drop-slot.dragover {
+  background: #eee;
+  transform: translateY(-2px);
+}
+
+.info-slot {
   background: #fff8dc;
+}
+
+.info-slot:hover,
+.info-slot.dragover {
+  background: #fff0a8;
+}
+
+.drop-inner {
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.icon {
+  font-size: 46px;
+  margin-bottom: 8px;
 }
 
 .slot-name {
@@ -190,41 +213,25 @@ textarea {
   margin-bottom: 10px;
 }
 
-.photo-box strong {
-  font-size: 22px;
+.drop-slot strong {
+  font-size: 24px;
   display: block;
   margin-bottom: 6px;
 }
 
-.photo-box em {
-  color: #555;
+.drop-slot em {
   display: block;
-  margin-bottom: 12px;
+  color: #444;
+  margin-bottom: 6px;
 }
 
-.upload-btn,
-.camera-btn {
+.drop-slot small {
   display: block;
-  border-radius: 12px;
-  padding: 12px;
-  margin: 10px 0;
-  cursor: pointer;
-  font-weight: 900;
+  color: #666;
+  font-weight: 800;
 }
 
-.upload-btn {
-  background: #1f1f1f;
-  color: white;
-}
-
-.camera-btn {
-  background: #fff;
-  border: 3px solid #1f1f1f;
-  color: #1f1f1f;
-}
-
-.upload-btn input,
-.camera-btn input {
+.hiddenFile {
   display: none;
 }
 
@@ -249,6 +256,7 @@ textarea {
   background: #fff4c7;
   border-radius: 10px;
   font-size: 14px;
+  font-weight: 700;
 }
 
 .hint {
@@ -278,7 +286,11 @@ textarea {
     display: block;
   }
 
-  .ocrBtn,
+  .ocrStatus {
+    display: block;
+    margin-top: 10px;
+  }
+
   .primary-btn,
   .secondary-btn {
     width: 100%;
