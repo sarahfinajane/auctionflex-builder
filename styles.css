@@ -170,15 +170,13 @@ textarea {
 .drop-slot {
   border: 5px dashed #1f1f1f;
   border-radius: 22px;
-  min-height: 330px;
+  min-height: 350px;
   padding: 16px;
   background: #fafafa;
   text-align: center;
-  cursor: pointer;
   transition: .15s ease;
 }
 
-.drop-slot:hover,
 .drop-slot.dragover {
   background: #eee;
   transform: translateY(-2px);
@@ -188,7 +186,6 @@ textarea {
   background: #fff8dc;
 }
 
-.info-slot:hover,
 .info-slot.dragover {
   background: #fff0a8;
 }
@@ -222,17 +219,44 @@ textarea {
 .drop-slot em {
   display: block;
   color: #444;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
 }
 
 .drop-slot small {
   display: block;
   color: #666;
   font-weight: 800;
+  margin-top: 8px;
 }
 
 .hiddenFile {
   display: none;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.slot-btn {
+  border: 3px solid #1f1f1f;
+  border-radius: 12px;
+  padding: 12px 8px;
+  font-weight: 900;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.galleryBtn {
+  background: white;
+  color: #1f1f1f;
+}
+
+.cameraBtn {
+  background: #1f1f1f;
+  color: white;
 }
 
 .preview {
