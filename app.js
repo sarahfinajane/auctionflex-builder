@@ -7,48 +7,42 @@ function csvEscape(value) {
 }
 
 function shortenTitle(text) {
-  let clean = text
-    .replace(/\s+/g, " ")
-    .replace(/[\n\r]/g, " ")
-    .trim();
-
-  const removeWords = [
-    "new", "brand new", "with", "and", "the", "for",
-    "in.", "inch", "inches", "packaging"
-  ];
-
-  // Keep first useful line if OCR is messy.
   let lines = text.split(/\n/).map(x => x.trim()).filter(Boolean);
+
   let likely = lines.find(line =>
     line.length > 8 &&
+    line.length < 120 &&
     !line.match(/^\$?\d+(\.\d{2})?$/) &&
     !line.toLowerCase().includes("barcode") &&
-    !line.toLowerCase().includes("google")
+    !line.toLowerCase().includes("google") &&
+    !line.toLowerCase().includes("shopping")
   );
 
-  clean = likely || clean;
+  let clean = likely || text;
+  clean = clean.replace(/\s+/g, " ").trim();
 
   if (clean.length <= 50) return clean;
 
-  // Trim at word boundary.
   clean = clean.slice(0, 50);
   clean = clean.slice(0, clean.lastIndexOf(" "));
   return clean.trim();
 }
 
 function findPrice(text) {
-  const priceMatches = text.match(/\$\s?\d{1,4}(?:,\d{3})*(?:\.\d{2})?/g);
-  if (!priceMatches || priceMatches.length === 0) return "";
-  return priceMatches[0].replace(/\s/g, "");
+  const prices = text.match(/\$\s?\d{1,4}(?:,\d{3})*(?:\.\d{2})?/g);
+  if (!prices || prices.length === 0) return "";
+  return prices[0].replace(/\s/g, "");
 }
 
 function guessFrom(text) {
   const lower = text.toLowerCase();
+
   if (lower.includes("home depot") || lower.includes("homedepot")) return "Home Depot";
   if (lower.includes("target")) return "Target";
-  if (lower.includes("lowe") || lower.includes("lowes")) return "Lowe's";
+  if (lower.includes("lowe")) return "Lowe's";
   if (lower.includes("walmart")) return "Walmart";
   if (lower.includes("amazon")) return "Amazon";
+
   return "";
 }
 
@@ -68,17 +62,29 @@ function refreshDescription(lotEl) {
   lotEl.querySelector(".description").value = buildDescription(lotEl);
 }
 
+function makePreviews(input, previewDiv) {
+  previewDiv.innerHTML = "";
+  const files = Array.from(input.files).slice(0, 5);
+
+  files.forEach(file => {
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    previewDiv.appendChild(img);
+  });
+}
+
 function createRows() {
   lotsDiv.innerHTML = "";
+
   const count = Number(document.getElementById("lotCount").value || 1);
   const masterSellerCode = document.getElementById("masterSellerCode").value;
   const masterStartBid = document.getElementById("masterStartBid").value;
 
   for (let i = 0; i < count; i++) {
     const node = template.content.cloneNode(true);
-    const lotEl = node.querySelector(".lot");
+    const lotEl = node.querySelector(".lot-card");
 
-    lotEl.querySelector("h3").textContent = `Lot line ${i + 1}`;
+    lotEl.querySelector("h2").textContent = `Lot Line ${i + 1}`;
 
     if (document.getElementById("copySellerCode").checked) {
       lotEl.querySelector(".sellerCode").value = masterSellerCode;
@@ -88,12 +94,27 @@ function createRows() {
       lotEl.querySelector(".startBid").value = masterStartBid;
     }
 
-    const fields = [".title", ".price", ".from"];
-    fields.forEach(sel => {
+    [".title", ".price", ".from"].forEach(sel => {
       lotEl.querySelector(sel).addEventListener("input", () => refreshDescription(lotEl));
     });
 
     lotEl.querySelector(".ocrBtn").addEventListener("click", () => runOCR(lotEl));
+
+    const stockInput = lotEl.querySelector(".stockPhotos");
+    const infoInput = lotEl.querySelector(".infoPhotos");
+    const personInput = lotEl.querySelector(".personPhotos");
+
+    stockInput.addEventListener("change", () => {
+      makePreviews(stockInput, lotEl.querySelector(".stockPreview"));
+    });
+
+    infoInput.addEventListener("change", () => {
+      makePreviews(infoInput, lotEl.querySelector(".infoPreview"));
+    });
+
+    personInput.addEventListener("change", () => {
+      makePreviews(personInput, lotEl.querySelector(".personPreview"));
+    });
 
     refreshDescription(lotEl);
     lotsDiv.appendChild(node);
@@ -110,7 +131,7 @@ async function runOCR(lotEl) {
     return;
   }
 
-  status.textContent = "Reading Slot 2 photos... this may take a minute.";
+  status.textContent = "Reading Slot 2 photos. This can take a minute.";
 
   let fullText = "";
 
@@ -130,13 +151,11 @@ async function runOCR(lotEl) {
   refreshDescription(lotEl);
 
   status.innerHTML =
-    "OCR complete. Please review title and price before exporting.<br><details><summary>Show OCR text</summary><pre>" +
-    fullText.replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])) +
-    "</pre></details>";
+    "OCR complete. Please review before exporting.";
 }
 
 function getLotRows() {
-  const lotEls = Array.from(document.querySelectorAll(".lot"));
+  const lotEls = Array.from(document.querySelectorAll(".lot-card"));
 
   return lotEls
     .map(lotEl => ({
@@ -152,9 +171,11 @@ function getLotRows() {
 function download(filename, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
+
   a.href = url;
   a.download = filename;
   a.click();
+
   URL.revokeObjectURL(url);
 }
 
@@ -178,15 +199,18 @@ function downloadCSV() {
 
 function extFromFile(file) {
   const name = file.name.toLowerCase();
+
   if (name.endsWith(".png")) return ".png";
   if (name.endsWith(".webp")) return ".webp";
   if (name.endsWith(".jpeg")) return ".jpg";
+
   return ".jpg";
 }
 
 async function downloadImageZip() {
   const zip = new JSZip();
-  const lotEls = Array.from(document.querySelectorAll(".lot"));
+  const lotEls = Array.from(document.querySelectorAll(".lot-card"));
+
   let count = 0;
 
   for (const lotEl of lotEls) {
